@@ -1,0 +1,43 @@
+@startuml
+title Rental SaaS - System Architecture
+
+package "Frontend Layer" {
+  component "React App" as frontend
+  component "Nginx" as nginx
+}
+
+package "Backend Layer" {
+  component "Flask API" as api
+  component "JWT Service" as jwt
+}
+
+package "Data Layer" {
+  database "PostgreSQL" as postgres
+  database "Redis" as redis
+}
+
+package "External Services" {
+  component "SMTP Server" as smtp
+  component "File Storage" as storage
+}
+
+' Connections
+frontend --> nginx
+nginx --> api
+api --> jwt
+api --> postgres
+api --> redis
+api --> smtp
+api --> storage
+
+' User interactions
+actor "Admin User" as admin
+actor "Customer" as customer
+actor "Manager" as manager
+
+admin --> frontend
+customer --> frontend
+manager --> frontend
+
+@enduml
+

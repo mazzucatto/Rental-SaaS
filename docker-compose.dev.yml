@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: rental_postgres_dev
+    environment:
+      POSTGRES_DB: rental_saas_dev
+      POSTGRES_USER: rental_user
+      POSTGRES_PASSWORD: rental_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - rental_network_dev
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: rental_redis_dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - rental_network_dev
+    restart: unless-stopped
+
+  # Mailhog (Development SMTP server)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: rental_mailhog_dev
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - rental_network_dev
+    restart: unless-stopped
+
+  # Adminer (Database management)
+  adminer:
+    image: adminer:latest
+    container_name: rental_adminer_dev
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - rental_network_dev
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+
+networks:
+  rental_network_dev:
+    driver: bridge
+

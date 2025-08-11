@@ -1,0 +1,203 @@
+@startuml Rental SaaS - Database ERD
+
+!define TABLE entity
+!define PK_FIELD <b><color:red>
+!define FK_FIELD <color:blue>
+
+title Rental SaaS - Entity Relationship Diagram
+
+TABLE Tenant {
+  PK_FIELD id : UUID
+  --
+  name : VARCHAR(255)
+  subdomain : VARCHAR(100)
+  settings : JSON
+  timezone : VARCHAR(50)
+  currency : VARCHAR(3)
+  language : VARCHAR(2)
+  is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE User {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  username : VARCHAR(100)
+  email : VARCHAR(255)
+  password_hash : VARCHAR(255)
+  first_name : VARCHAR(100)
+  last_name : VARCHAR(100)
+  phone : VARCHAR(20)
+  role : ENUM
+  permissions : JSON
+  is_active : BOOLEAN
+  last_login : TIMESTAMP
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE Category {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  name : VARCHAR(255)
+  description : TEXT
+  parent_id : UUID
+  is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE RentalItem {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  FK_FIELD category_id : UUID
+  name : VARCHAR(255)
+  description : TEXT
+  sku : VARCHAR(100)
+  hourly_price : DECIMAL(10,2)
+  daily_price : DECIMAL(10,2)
+  weekly_price : DECIMAL(10,2)
+  monthly_price : DECIMAL(10,2)
+  total_quantity : INTEGER
+  available_quantity : INTEGER
+  min_rental_hours : INTEGER
+  max_rental_days : INTEGER
+  requires_deposit : BOOLEAN
+  deposit_amount : DECIMAL(10,2)
+  specifications : JSON
+  images : JSON
+  status : ENUM
+  is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE Customer {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  customer_code : VARCHAR(50)
+  full_name : VARCHAR(255)
+  email : VARCHAR(255)
+  phone : VARCHAR(20)
+  address : TEXT
+  document_number : VARCHAR(50)
+  document_type : VARCHAR(20)
+  birth_date : DATE
+  notes : TEXT
+  is_active : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE Reservation {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  FK_FIELD item_id : UUID
+  FK_FIELD customer_id : UUID
+  reservation_code : VARCHAR(50)
+  start_date : TIMESTAMP
+  end_date : TIMESTAMP
+  quantity : INTEGER
+  base_amount : DECIMAL(10,2)
+  additional_fees : DECIMAL(10,2)
+  discount_amount : DECIMAL(10,2)
+  final_amount : DECIMAL(10,2)
+  deposit_amount : DECIMAL(10,2)
+  status : ENUM
+  notes : TEXT
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE Contract {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  FK_FIELD reservation_id : UUID
+  contract_number : VARCHAR(50)
+  terms_and_conditions : TEXT
+  signed_date : TIMESTAMP
+  contract_file_url : VARCHAR(500)
+  status : ENUM
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE Payment {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  FK_FIELD reservation_id : UUID
+  payment_code : VARCHAR(50)
+  amount : DECIMAL(10,2)
+  payment_method : VARCHAR(50)
+  payment_date : TIMESTAMP
+  due_date : TIMESTAMP
+  status : ENUM
+  transaction_id : VARCHAR(255)
+  gateway_response : JSON
+  notes : TEXT
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+TABLE CheckInOut {
+  PK_FIELD id : UUID
+  --
+  FK_FIELD tenant_id : UUID
+  FK_FIELD reservation_id : UUID
+  FK_FIELD user_id : UUID
+  type : ENUM
+  datetime : TIMESTAMP
+  condition_notes : TEXT
+  photos : JSON
+  signature : TEXT
+  created_at : TIMESTAMP
+}
+
+' Relationships
+Tenant ||--o{ User : "has many"
+Tenant ||--o{ Category : "has many"
+Tenant ||--o{ RentalItem : "has many"
+Tenant ||--o{ Customer : "has many"
+Tenant ||--o{ Reservation : "has many"
+
+Category ||--o{ RentalItem : "categorizes"
+Category ||--o{ Category : "parent/child"
+
+RentalItem ||--o{ Reservation : "reserved"
+Customer ||--o{ Reservation : "makes"
+
+Reservation ||--|| Contract : "generates"
+Reservation ||--o{ Payment : "has payments"
+Reservation ||--o{ CheckInOut : "has check-ins/outs"
+
+User ||--o{ CheckInOut : "performs"
+
+note right of Tenant
+  Multi-tenant architecture
+  All data is isolated
+  by tenant_id
+end note
+
+note right of RentalItem
+  Supports multiple
+  pricing models and
+  inventory tracking
+end note
+
+note right of Reservation
+  Core entity that
+  connects items,
+  customers, and
+  business logic
+end note
+
+@enduml
+
