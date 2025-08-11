@@ -1,0 +1,82 @@
+version: "3.8"
+
+services:
+  # ------------------ BACKEND ------------------
+  backend:
+    build:
+      context: ./backend/rental-backend
+      dockerfile: Dockerfile
+    container_name: rental_saas_backend
+    restart: unless-stopped
+    networks:
+      - default
+      - minha_rede
+    environment:
+      POSTGRES_DB: rental_saas
+      POSTGRES_USER: rental_user
+      POSTGRES_PASSWORD: SENHA_FORTE_AQUI
+      DB_HOST: postgres
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: xjmPAbMUamTfsLvSflYYhUzTL
+      SECRET_KEY: chave_muito_longa_e_unica
+      JWT_SECRET_KEY: chave_jwt_muito_longa_e_unica
+      DOMAIN: cattos.com.br
+      TENANT_SUBDOMAIN_FORMAT: "{subdomain}.cattos.com.br"
+      CORS_ORIGINS: https://estoque.cattos.com.br,https://*.cattos.com.br
+      MAIL_SERVER: smtp.exemplo.com
+      MAIL_PORT: 587
+      MAIL_USE_TLS: "true"
+      MAIL_USERNAME: seu_email@exemplo.com
+      MAIL_PASSWORD: sua_senha_de_email
+      MAIL_DEFAULT_SENDER: "Seu Nome <seu_email@exemplo.com>"
+      FLASK_ENV: production
+      FLASK_DEBUG: "false"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rental-backend.rule=Host(`estoqueapi.cattos.com.br`)"
+      - "traefik.http.routers.rental-backend.entrypoints=websecure"
+      - "traefik.http.routers.rental-backend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.rental-backend.loadbalancer.server.port=5000"
+
+  # ------------------ FRONTEND ------------------
+  frontend:
+    build:
+      context: ./frontend/rental-frontend
+      dockerfile: Dockerfile
+    container_name: rental_saas_frontend
+    restart: unless-stopped
+    networks:
+      - default
+      - minha_rede
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rental-frontend.rule=Host(`estoque.cattos.com.br`)"
+      - "traefik.http.routers.rental-frontend.entrypoints=websecure"
+      - "traefik.http.routers.rental-frontend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.rental-frontend.loadbalancer.server.port=80"
+
+  # ------------------ BANCO DE DADOS ------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: rental_saas_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rental_saas
+      POSTGRES_USER: rental_user
+      POSTGRES_PASSWORD: SENHA_FORTE_AQUI
+    volumes:
+      - rental_saas_db_data:/var/lib/postgresql/data
+    networks:
+      - default
+
+volumes:
+  rental_saas_db_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+  minha_rede:
+    external: true
